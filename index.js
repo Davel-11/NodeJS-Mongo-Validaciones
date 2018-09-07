@@ -75,8 +75,26 @@ mongoose.connect('mongodb://172.17.0.2:27017/playground?authSource=admin',{
         console.log(courses);
     }
 
-    getCourses2();
+    async function updateCourse(id){
+        const course = await Course.findById(id);
+        if (!course) return;
+
+        course.isPublished = true;
+        course.author = 'Another Author';
+
+        const result = await course.save();
+        console.log(result);
+    }
+
+    //getCourses2();
+    //updateCourse('5b9284d6cbee9416048f1aba');
     
     
 
+    async function removeCourse(id){
+        const result = await Course.deleteOne({ _id: id });
+        console.log(result);
+    }
+
+    removeCourse('5b9284d6cbee9416048f1aba');
     

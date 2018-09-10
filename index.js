@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
-mongoose.connect('mongodb://172.17.0.2:27017/playground?authSource=admin',{
-    user: 'mongoadmin',
+mongoose.connect('mongodb://172.17.0.2:27017/movies?authSource=admin',{
+    user: 'root',
     pass: '1234'    
     })  
     .then(() => console.log('Connected to Mongodb'))
@@ -9,26 +9,71 @@ mongoose.connect('mongodb://172.17.0.2:27017/playground?authSource=admin',{
 
 
     const courseSchema = new mongoose.Schema({
-        name: String,
+        name: 
+            { 
+                type: String, 
+                required: true,
+                minlength: 5,
+                maxlength: 255                
+                //match: /pattern/
+            },
+        category: {
+            type: String,
+            required: true,
+            enum: ['web', 'mobile', 'network'],
+            lowercase: true
+        },
         author: String,
-        tags: [String],
+        tags: {
+            type: Array,
+            validate: {
+                isAsync: true,                
+                validator: function (v, callback) {
+                    // do some async work
+                    //simulate tiem response
+                    setTimeout(() => {
+                        const result = v && v.length > 0;
+                        callback(result);
+                    }, 500);                   
+                },
+                message: 'A course should have at least one tag.'
+            }
+        },
         date: {type: Date, default: Date.now },
-        isPublished: Boolean
+        isPublished: Boolean,
+        price: {
+            type: Number,
+            required: function() { return this.isPublished; },
+            min: 10,
+            max: 200,
+            get: v => Math.round(v),
+            set: v => Math.round(v)
+        }
     });
 
     const Course  = mongoose.model('Course', courseSchema );
     //-------------
+
     async function createCourse(){
         const course = new Course ({
-            name: 'curso',
+            name: 'cursos',
             author: 'davel',
-            tags: ['node', 'backend'],
-            isPublished:true
-        });
-        //save to data base
-        const result = await course.save();
-        console.log(result);
+            category: 'WEB',
+            tags: ['frontend'],
+            isPublished:true,
+            price: 15.8
+        });        
+
+        try{
+            //save to data base
+            const result = await course.save();
+            console.log(result);
+        }catch (ex) {
+            console.log(ex.message);
+        }
     }
+
+    //createCourse();
 
     async function createCourse2(){
         //eq (equal)
@@ -41,10 +86,12 @@ mongoose.connect('mongodb://172.17.0.2:27017/playground?authSource=admin',{
         // nin  
 
         const course = new Course ({
-            name: 'curso',
+            //name: 'curso',
+            category: '-',
             author: 'davel',
             tags: ['node', 'backend'],
-            isPublished:true
+            isPublished:true,
+            price: 15
         });
         //save to data base
         const result = await course.save();
@@ -54,15 +101,17 @@ mongoose.connect('mongodb://172.17.0.2:27017/playground?authSource=admin',{
     async function getCourses(){
         //or and 
         const courses = await Course
-        //.find({author: 'Mosh', isPublished: true})
         .find()
-            .or([{author: 'Mosh'},{ author: 'davel' }])
-        .limit(10)
+        //.find()
+          //  .or([{author: 'Mosh'},{ author: 'davel' }])
+        //.limit(10)
         .sort({name:1})
-        .select({name:1, tags: 1, author:1});
+        .select({name:1, tags: 1, author:1, price:1});        
 
         console.log(courses);
     }
+
+    getCourses();
 
     async function getCourses2(){
         //or and 
@@ -71,7 +120,6 @@ mongoose.connect('mongodb://172.17.0.2:27017/playground?authSource=admin',{
         .limit(10)
         .sort({name:1})
         .select({name:1, tags: 1, author:1});
-
         console.log(courses);
     }
 
@@ -96,5 +144,5 @@ mongoose.connect('mongodb://172.17.0.2:27017/playground?authSource=admin',{
         console.log(result);
     }
 
-    removeCourse('5b9284d6cbee9416048f1aba');
+    //removeCourse('5b9284d6cbee9416048f1aba');
     
